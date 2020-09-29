@@ -1,0 +1,45 @@
+﻿@model DepremAnalizSistemi.Models.ViewModel.UserLoginViewModel
+
+@using (Ajax.BeginForm("Login", "Kullanicilar", new AjaxOptions { HttpMethod = "POST", UpdateTargetId = "Login", OnSuccess = "onSuccessLogin", OnFailure = "onFailLogin" }))
+{
+    @Html.AntiForgeryToken()
+    <div class="form-group">
+        <div class="row">
+            <div class="col-lg-offset-1 col-md-10">
+                @Html.LabelFor(model => model.Email, htmlAttributes: new { @class = "control-label" })
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-offset-1 col-md-10">
+                @Html.EditorFor(model => model.Email, new { htmlAttributes = new { @class = "form-control", autocomplete = "off" } })
+                @Html.ValidationMessageFor(model => model.Email, "", new { @class = "text-danger" })
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="row">
+            <div class="col-lg-offset-1 col-md-10">
+                @Html.LabelFor(model => model.Password, htmlAttributes: new { @class = "control-label" })
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-offset-1 col-md-10">
+                @Html.EditorFor(model => model.Password, new { htmlAttributes = new { @class = "form-control", id = "SifreInput", autocomplete = "off"} })
+                @Html.ValidationMessageFor(model => model.Password, "", new { @class = "text-danger" })
+                <span class="text-warning">@Html.DisplayFor(model => model.LoginErrorMessage)</span>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="col-lg-offset-8 col-md-4">
+            <input type="submit" value="Login" class="btn btn-default" />
+
+        </div>
+    </div>
+    <a id="ForgetPass" href="#">Lost your password?</a>
+
+}
+
+
+

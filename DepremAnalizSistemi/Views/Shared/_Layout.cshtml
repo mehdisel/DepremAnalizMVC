@@ -1,0 +1,61 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deprem Analiz Sistemi</title>
+    <link rel="shortcut icon" href="~/Assets/img/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="~/Assets/img/favicon.ico" type="image/x-icon">
+    @Styles.Render("~/Content/css")
+    @Scripts.Render("~/bundles/modernizr")
+    @RenderSection("styles", required: false)
+</head>
+<body>
+    <div class="navbar navbar-inverse navbar-fixed-top">
+        
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a href="~/Depremler/Index" class="navbar-brand">
+                    <img src="~/Assets/img/1296209.png" width="32" height="32" />
+                </a>
+
+                @*@Html.ActionLink("Deprem Analiz Sistemi", "Index", "Depremler", new { area = "" }, new { @class = "navbar-brand" })*@
+            </div>
+            <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
+                    <li>@Html.ActionLink("Depremler", "Index", "Depremler")</li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    @if (Session["kullanici"] == null)
+                    {
+                        <li><a href="#" id="RegisterButton"><span class="glyphicon glyphicon-edit"></span> Üye Ol</a></li>
+                        <li><a href="#" id="LoginButton"><span class="glyphicon glyphicon-log-in"></span> Giriş Yap</a></li>
+                    }
+                    else
+                    {
+                        <li><a href="#" id="AccountButton"><span class="glyphicon glyphicon-user "></span> Hesabım</a></li>
+                        <li><a href="@Url.Action("Cikis","Kullanicilar")"><span class="glyphicon glyphicon-off "></span> Çıkış</a></li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class=" body-content">
+        @RenderBody()
+        <hr />
+        <footer>
+            <p>&copy; @DateTime.Now.Year - Deprem Analiz Sistemi</p>
+        </footer>
+    </div>
+
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/jqueryval")
+    @Scripts.Render("~/bundles/bootstrap")
+    @RenderSection("scripts", required: false)
+</body>
+</html>

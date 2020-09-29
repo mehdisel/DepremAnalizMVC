@@ -1,0 +1,1048 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    string apiURL = "https://maps.googleapis.com/maps/api/js?key="+ DepremAnalizSistemi.Properties.Settings.Default.GoogleAPIKey;
+}
+<script src="@apiURL" type="text/javascript"></script>
+
+<!-- This css is to ensure that the google map contols (zoom bar etc) show and size correctly. -->
+@section styles{
+
+    <style>
+        #map_canvas img {
+            max-width: none
+        }
+
+        input[type="datetime-local"]::-webkit-clear-button {
+            display: none; /* Hide the button */
+            -webkit-appearance: none; /* turn off default browser styling */
+        }
+
+        .infoDiv {
+            height: 150px;
+            width: 150px;
+            -webkit-user-select: none;
+            background-color: white;
+        }
+
+
+        .sidenavR {
+            background-color: #111;
+            height: 100%;
+            overflow-x: hidden;
+            padding-top: 60px;
+            position: fixed;
+            right: 0;
+            top: 0;
+            transition: .5s;
+            width: 0;
+            z-index: 1;
+        }
+
+            .sidenav label, .sidenavR label {
+                color: #818181;
+            }
+
+
+            .sidenav a:hover, .offcanvas a:focus, .sidenavR a:hover, .offcanvas a:focus {
+                color: #f1f1f1;
+            }
+
+            .sidenav .closebtn, .sidenavR .closebtn {
+                font-size: 36px;
+                margin-left: 50px;
+                position: absolute;
+                right: 25px;
+                top: 0;
+            }
+
+        #Messages .mesaj, #SMessages .mesaj {
+            background-color: #111;
+            color: white;
+            margin: 10px;
+        }
+
+            #Messages .mesaj:hover, #SMessages .mesaj:hover {
+                background-color: blue;
+                color: white;
+            }
+
+        .mesajicerigi {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+
+        .mesajbaslik {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 300px;
+        }
+
+        #Kullanicilar {
+            z-index: 1000 !important;
+        }
+
+        .modal {
+            z-index: 100 !important;
+        }
+
+        .modal-backdrop {
+            z-index: 99 !important;
+        }
+
+        .navbar {
+            z-index: 98 !important;
+        }
+    </style>
+}
+@*<div >
+        <div class="panel-group">
+            <div class="panel panel-primary">
+                <div class="panel-heading in" data-toggle="collapse" data-target="#collapseExample2" aria-expanded="true" aria-controls="collapseExample2">
+                    <div class="row">
+                        <div class="col-xs-6"><i class="glyphicon glyphicon-triangle-right"></i> Panel with panel-primary class <span class="label label-warning">Warning</span></div>
+                        <div class="col-xs-6" align="right"><span class="badge" align="right">ABC</span></div>
+                    </div>
+                </div>
+                <div class="panel-body collapse in" id="collapseExample2">
+
+                </div>
+            </div>
+        </div>
+    </div>*@
+
+<div id="mySidenavR" class="sidenavR">
+    <a href="javascript:void(0)" class="glyphicon glyphicon-arrow-right" onclick="closeNavR()" style="font-size:50px;text-decoration:none;"></a>
+    @if (Session["kullanici"] == null)
+    {
+        <div id="Login" hidden>
+            @Html.Partial("LoginPartial")
+        </div>
+        <div id="Register" hidden>
+            @Html.Partial("RegisterPartial")
+        </div>
+        <div id="ForgetPassword" hidden>
+            @Html.Partial("PasswordPartial")
+        </div>
+    }
+    else
+    {
+        <div id="Links" hidden>
+            @Html.Partial("LinksPartial")
+        </div>
+        <div id="MyAccountSettings" hidden>
+            @Html.Partial("AccountPartial")
+
+        </div>
+        <div id="Messages" hidden>
+            @Html.Partial("MessagesPartial")
+        </div>
+        <div id="SMessages" hidden>
+            @Html.Partial("SendMessagesPartial")
+        </div>
+    }
+
+</div>
+<div class="container">
+    @if (Session["kullanici"] == null)
+    {
+        <label id="tarihLabel" style="font-size:20px;"></label>
+        <div hidden>
+
+            <input type="datetime-local" id="baslangic" class="form-control">
+            <input type="datetime-local" id="bitis" class="form-control">
+            <select id="depremYeri" name="depremYeri" class="dropdown form-control ">
+                <option value='seciniz' id="seciniz" selected style="display:none">Seçiniz</option>
+            </select>
+            <input type="number" id="depremSiddetK" name="name" value="0.0" min="0.0" step="0.1" class="form-control" />
+            <input type="number" id="depremSiddetB" name="name" value="10.0" min="0.0" step="0.1" class="form-control" />
+            <input type="number" id="depremDerinlikK" name="name" value="0.0" min="0.0" step="1.0" class="form-control" />
+            <input type="number" id="depremDerinlikB" name="name" value="1000.0" min="0.0" step="1.0" class="form-control" />
+            <button class="btn btn-primary" style="float:right" id="filtrele">Filtrele</button>
+            <input type="number" id="enlem" name="name" value="00.00000" class="form-control" />
+            <input type="number" id="boylam" name="name" value="00.00000" class="form-control" />
+
+        </div>
+
+
+    }
+    else
+    {
+
+        <label id="tarihLabel" hidden></label>
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <div class="row" style="margin:10px">
+                    <div class="form-group">
+                        <div class=" col-md-4">
+                            <input type="datetime-local" id="baslangic" class="form-control">
+                        </div>
+                        <div class=" col-md-4">
+                            <input type="datetime-local" id="bitis" class="form-control">
+                        </div>
+                        <div class=" col-md-4">
+                            <button class="btn btn-success" onclick="DTSifirla()">Sıfırla</button>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="row " style="margin:10px">
+                    <div class="panel-group">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h4 class="panel-title">
+                                    <a data-toggle="collapse" href="#detay">Detay</a>
+                                </h4>
+                            </div>
+                            <div id="detay" class="panel-collapse collapse">
+                                <ul class="list-group ">
+                                    <li class="list-group-item">
+                                        <div class="row">
+                                            <div class="col-lg-12 form-horizontal">
+                                                <div class="col-lg-3 form-inline">
+                                                    <div class="form-group ">
+                                                        <div class="col-lg-3">
+                                                            <label>Şehir: </label>
+                                                        </div>
+                                                        <div class="col-lg-9">
+                                                            <select id="depremYeri" name="depremYeri" class="dropdown form-control ">
+                                                                <option value='seciniz' id="seciniz" selected style="display:none">Seçiniz</option>
+                                                            </select>
+
+                                                        </div>
+
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </li>
+                                    <li class="list-group-item">
+                                        <div class="row">
+                                            <div class="col-lg-12 form-horizontal">
+                                                <label>Deprem Şiddeti:</label>
+                                                <div>
+                                                    <div class="col-lg-3 form-inline">
+                                                        <div class="form-group">
+                                                            <label>Min: </label>
+                                                            <input type="number" id="depremSiddetK" name="name" value="0.0" min="0.0" step="0.1" class="form-control" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-lg-3 form-inline">
+                                                        <div class="form-group">
+                                                            <label>Max: </label>
+                                                            <input type="number" id="depremSiddetB" name="name" value="10.0" min="0.0" step="0.1" class="form-control" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    <li class="list-group-item">
+                                        <div class="row">
+                                            <div class="col-lg-12 form-horizontal">
+                                                <label>Deprem Derinliği:</label>
+                                                <div>
+                                                    <div class="col-lg-3 form-inline">
+                                                        <div class="form-group">
+                                                            <label>Min: </label>
+                                                            <input type="number" id="depremDerinlikK" name="name" value="0.0" min="0.0" step="1.0" class="form-control" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-lg-3 form-inline">
+                                                        <div class="form-group">
+                                                            <label>Max: </label>
+                                                            <input type="number" id="depremDerinlikB" name="name" value="1000.0" min="0.0" step="1.0" class="form-control" />
+                                                        </div>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    <li class="list-group-item">
+                                        <div class="row">
+                                            <div class="col-lg-12 form-horizontal">
+                                                <label>Enlem-Boylam:</label>
+                                                <div>
+                                                    <div class="col-lg-3 form-inline">
+                                                        <div class="form-group">
+                                                            <label>Enlem:</label>
+                                                            <input type="number" id="enlem" name="name" value="00.00000" class="form-control" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-lg-4 form-inline">
+                                                        <div class="form-group">
+                                                            <label>Boylam: </label>
+                                                            <input type="number" id="boylam" name="name" value="00.00000" class="form-control" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-lg-5">
+                                                        <label></label>
+                                                        <button class="btn btn-primary" style="float:right" id="filtrele">Filtrele</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </li>
+                                </ul>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    <div id="map_canvas" style="height: 600px;"></div>
+    <div id="gDepremTablosu">
+        @Html.Partial("DepremTablo")
+
+    </div>
+</div>
+
+<div class="modal fade" id="basicModal" tabindex="-1" role="dialog" aria-labelledby="basicModal" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="myModalLabel">Deprem Detayları</h4>
+            </div>
+            <div class="modal-body">
+                <div id="DepremBilgileri">
+                </div>
+                <div id="Mesaj">
+                    <div class="panel-group">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h4 class="panel-title" style="text-align:center">
+                                    <a data-toggle="collapse" href="#mesajgonder">Mesaj Gönder</a>
+                                </h4>
+                            </div>
+
+                            <div class="panel-body">
+                                <div id="mesajgonder" class="panel-collapse collapse">
+                                    <div class="row">
+                                        <div class="col-lg-12">
+                                            <label>Kullanıcı Seçiniz:</label>
+                                            <div class="row" id="kullaniciSecimi">
+                                                <select id="Kullanicilar" class="dropdown form-control col-lg-offset-1 col-lg-4" style="overflow-y:auto;">></select>
+                                                <input type="text" id="AramaBox" class="form-control col-lg-4" placeholder="Arama" />
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-lg-12">
+                                            <label>Mesaj Başlığı</label>
+                                            <input type="text" id="MesajBasliği" placeholder="Mesaj Başlığı" class="form-control" />
+                                            <label id="mesajbaslikhata" hidden style="color:darkred">Başlık boş olamaz!</label>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-lg-10">
+                                            <label>Mesaj</label>
+                                            <textarea role="textbox" rows="5" style="width:700px" id="MesajIcerik" placeholder="Mesaj İçeriği" class="form-control"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-2 col-lg-offset-10">
+                                        <button id="MesajGondermeButonu" class="btn btn-success">Gönder</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                @*<button type="button" class="btn btn-primary">Save changes</button>*@
+            </div>
+        </div>
+    </div>
+</div>
+
+<br />
+<br />
+<br />
+
+@section scripts {
+
+    <section>
+        <script type="text/javascript">
+            $(document).ready(function () {
+
+                LoadDateTimePickers();//datetimepickerların min max valuesunu belirlediğim fonksiyonu çağırdım.
+                //#region GoogleApiKodlari
+                google.maps.visualRefresh = true;
+                var Ankara = new google.maps.LatLng(39.925533, 32.866287); //yeni yer tanımlaması enlem boylam verisi gönderip yer tanımladım.
+                var mapOptions = { //harita özellikleri
+                    zoom: 6,//başlangıçtaki zoom
+                    center: Ankara,//merkezi
+                    streetViewControl: false, //streetview özelliğini kapattım
+                    mapTypeId: google.maps.MapTypeId.ROADMAP,//haritatipini roadmap olarak ayarladım
+                    scaleControl: true,
+                    scaleControlOptions: { position: google.maps.ControlPosition.BOTTOM_LEFT }
+                };
+                var scaleInterval = setInterval(function () {
+                    var scale = $(".gm-style-cc:not(.gmnoprint):contains(' km')");
+                    if (scale.length) {
+                        scale.click();
+                        clearInterval(scaleInterval);
+                    }
+                }, 100);
+                map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);//yeni map oluşturdum
+                RunAjax(map);//depremleri getiren ajax fonksiyonumu çağırdım
+                //#endregion
+                //#region DepremOlaylari
+                $('#baslangic,#bitis,#depremYeri').change(function () {//id'si baslangic bitis ve depremyeri olan elementlerin change olayında çalışcak olak fonksiyonu tanımladım
+                    removeMarkers();//markerlar değişime göre yeniden oluşcagından önceki markerları temizleyen fonsiyonu çağırdım.
+                    secilen = $("#depremYeri").val();//depremyeri id li dropdowndan seçilenin value sunu secilen değişkenine aldım.
+                    RunAjax(map);//değişim sonucu yeni markerlar için runajax fonksiyonumu cagırdım
+                });
+                $("#filtrele").click(function () {
+                    removeMarkers();//markerlar değişime göre yeniden oluşcagından önceki markerları temizleyen fonsiyonu çağırdım.
+                    secilen = $("#depremYeri").val();//depremyeri id li dropdowndan seçilenin value sunu secilen değişkenine aldım.
+                    RunAjax(map);//değişim sonucu yeni markerlar için runajax fonksiyonumu cagırdım
+                })
+
+                //#endregion
+                //#region KullaniciOlaylari
+                $("#LoginButton").click(function () {
+                    $("#mySidenavR").css("width", "300px");
+                    $("#Register").hide();
+                    $("#ForgetPassword").hide();
+                    $("#Login").show();
+                });
+
+                $("#RegisterButton").click(function () {
+                    $("#mySidenavR").css("width", "300px");
+                    $("#Login").hide();
+                    $("#ForgetPassword").hide();
+                    $("#Register").show();
+                });
+                $("#AccountButton").click(function () {
+                    $("#mySidenavR").css("width", "300px");
+                    $("#MyAccountSettings").hide();
+                    $("#Messages").hide();
+                    $("#SMessages").hide();
+                    $("#Links").show();
+                });
+                $("#Inbox").click(function () {
+                    $("#MyAccountSettings").hide();
+                    $("#SMessages").hide();
+                    $("#Links").hide();
+                    $("#Messages").show();
+                    GetInbox();
+                });
+                $("#SendMessages").click(function () {
+                    $("#MyAccountSettings").hide();
+                    $("#Messages").hide();
+                    $("#Links").hide();
+                    $("#SMessages").show();
+                    GetSendMessages();
+                });
+
+                $("#ForgetPass").click(function () {
+                    $("#Login").hide();
+                    $("#Register").hide();
+                    $("#ForgetPassword").show();
+                });
+
+                //#endregion
+                $("#AccountSetting").click(function () {
+                    $("#Messages").hide();
+                    $("#Links").hide();
+                    $.ajax({
+                        type: 'post',
+                        url: '@Url.Action("GetUser","Kullanicilar")',
+                        dataType: 'html',
+
+                        success: function (data) {
+                            $("#MyAccountSettings").html(data);
+                        },
+                         complete: function () {
+
+                             $("#MyAccountSettings").show();
+                        }
+
+                    });
+                });
+                var sayfaTimer
+                sayfaTimer= setInterval(Timer, 120000);
+
+
+                $("#basicModal").on('show.bs.modal', function (event) {
+                    clearInterval(sayfaTimer);
+                });
+                $("#basicModal").on('hide.bs.modal', function (event) {
+                    sayfaTimer=setInterval(Timer, 120000);
+                });
+
+                KisileriGetir("");
+
+                var aramaKelimesi;
+                $("#AramaBox").change(function () {
+                        aramaKelimesi = $("#AramaBox").val();
+                        KisileriGetir(aramaKelimesi);
+                });
+
+                $("#MesajGondermeButonu").click(function () {
+                    var mesaj = {};
+                    var mesajBasligi = $("#MesajBasliği").val();
+                    mesaj["MesajBasligi"] = $("#MesajBasliği").val();
+                    mesaj["Mesaj"] = $("#MesajIcerik").val();
+                    mesaj["AliciID"] = parseInt($("#Kullanicilar option:selected").val());
+                    mesaj["DepremID"] = markerID;
+                    $("#mesajbaslikhata").hide();
+                    console.log(mesaj);
+                    if (mesajBasligi.trim() == "" || mesajBasligi == null) {
+                        $("#mesajbaslikhata").show();
+                        return;
+                    }
+                    $.ajax({
+                        type:'post',
+                        url:'@Url.Action("SendMessage","Kullanicilar")',
+                        data: JSON.stringify(mesaj),
+                        contentType: 'application/json',
+                        success: function () {
+                            alert("Mesaj gönderildi.");
+                            $("#MesajBasliği").val("");
+                            $("#MesajIcerik").val("");
+                            KisileriGetir("");
+                            GetInbox();
+                            GetSendMessages();
+
+                        },
+                        error: function () {
+                            alert("Mesaj gönderilemedi!");
+                        }
+                    })
+                })
+
+            });
+
+
+            function GetInbox() {
+                $.ajax({
+                    type: 'post',
+                    url: '@Url.Action("GetInbox","Kullanicilar")',
+                    UpdateTargetId: "Messages",
+                    dataType: 'html',
+                    success: function (result) {
+                        $("#Messages").empty();
+                        $('#Messages').html(result);
+                    },
+                    error: function (data) {
+                        console.log(data)
+                        alert("mesaj getirilemedi");
+                    }
+
+                });
+            }
+            function GetSendMessages() {
+                $.ajax({
+                    type: 'post',
+                    url: '@Url.Action("GetSendMessages", "Kullanicilar")',
+                    UpdateTargetId: "SMessages",
+                    dataType: 'html',
+                    success: function (result) {
+                        $("#SMessages").empty();
+                        $('#SMessages').html(result);
+                    },
+                    error: function (data) {
+                        console.log(data)
+                        alert("mesaj getirilemedi");
+                    }
+
+                });
+            }
+            var onSuccess = function (result) {
+                if (result.url) {
+                    alert("Kayıt Başarılı!");
+                    window.location.href = result.url;
+                }
+            }
+            var onSuccessLogin = function (result) {
+                if (result.url) {
+                    alert("Giriş Başarılı!");
+                    window.location.href = result.url;
+                }
+            }
+            var onSuccessLostPassword = function (result) {
+                if (result.url) {
+                    alert("Mail Gonderimi Başarılı!");
+                    window.location.href = result.url;
+
+                }
+            }
+            var onChangeSettingsSuccess = function (result) {
+                if (result.url) {
+                    alert("Kullanıcı Bilgi Değişimi Başarılı!");
+                    window.location.href = result.url;
+
+                }
+            }
+            var onChangePasswordSuccess = function (result) {
+                if (result.url) {
+                    alert("Şifre Değişimi Başarılı!");
+                    window.location.href = result.url;
+
+                }
+            }
+
+
+
+            function KisileriGetir(arama) {
+                    $.ajax({
+                    type:'Post',
+                        url: '@Url.Action("GetUsers","Kullanicilar")',
+                        data: {"Arama":arama},
+                    dataType: 'json',
+                    success: function (kullanicilar) {
+                        $("#Kullanicilar").empty();
+                        for (var i = 0; i < kullanicilar.length; i++) {
+                            $("#Kullanicilar").append("<option id='" + kullanicilar[i].ID + "' value='" + kullanicilar[i].ID + "' >" + kullanicilar[i].AdSoyad + " - " + kullanicilar[i].Email + "</option>")
+                        };
+                    }
+                })
+            }
+
+            var onFail = function (result) {
+                alert("Kullanıcı sistemde kayıtlı.");
+                $("#Login").hide();
+                $("#Register").hide();
+                $("#ForgetPassword").show();
+                $("#EMailInput").val($("#RegisterEmail").val());
+            }
+            var onFailLogin = function (result) {
+                alert("Email Şifre Uyuşmuyor!");
+                $("#SifreInput").val("");
+            }
+            var onFailLostPassword = function (result) {
+                alert("Bu kullanıcı sistemde kayıtlı değil!");
+                $("#Login").hide();
+                $("#ForgetPassword").hide();
+                $("#Register").show();
+            }
+            function openNavR() {
+                document.getElementById("mySidenavR").style.width = "300px";
+            }
+
+            function closeNavR() {
+                document.getElementById("mySidenavR").style.width = "0";
+            }
+            var gelenData;
+            var gmarkers = [];//markerları tuttugum diziyi tanımladım.
+            var secilen;//dropdownda seçilen veriyi tutacagım değişken
+            var map;
+
+            function Timer() {
+                @{
+                  if (Session["kullanici"]!=null)
+                   {
+                        @:GetInbox();
+                        @:GetSendMessages();
+
+
+                   }
+                }
+                removeMarkers();
+                RunAjax(map);
+                console.log("calisti");
+            }
+            var onceki = 1;
+            var markerID;
+            $(document).on('click', '.markerPan', function () {
+                var id = $(this).attr("id");
+                markerID= search(id, gmarkers);
+                google.maps.event.trigger(gmarkers[onceki], 'mouseout');
+                map.panTo(gmarkers[markerID].getPosition());
+                google.maps.event.trigger(gmarkers[markerID], 'mouseover');
+                onceki = markerID;
+                //map.setZoom(14);
+            })
+
+            function search(nameKey, myArray) {
+                for (var i = 0; i < myArray.length; i++) {
+
+                    if (myArray[i].id == nameKey) {
+                        console.log(myArray[i].id)
+                        return i;
+                    }
+                }
+            }
+            var oncekiSayfa = 1;
+            $(document).on('click', '#gDepremTablosu .sayfaNumaralari li a', function (event) {
+
+                var sayfaNum = $(this).text();
+                var page = "?page=" + sayfaNum;
+                switch (sayfaNum) {
+                    case "«":
+                        page = "?page=" + (oncekiSayfa - 1);
+                        oncekiSayfa -= 1;
+                        break;
+                    case "»":
+                        page = "?page=" + (oncekiSayfa + 1);
+                        oncekiSayfa += 1;
+                        break;
+                    case "»»":
+                        var sonListelenenSonSayfa = $(this).parents("li").last().prev("li").prev("li").prev("li").text();
+                        page = "?page=" + sonListelenenSonSayfa;
+                        oncekiSayfa = parseInt(sonListelenenSonSayfa,10);
+                        break;
+                    case "««":
+                       alert();
+                        page = "?page=" + 1;
+                        oncekiSayfa = 1;
+                        break;
+                    default:
+                        oncekiSayfa = parseInt(sayfaNum, 10);
+                        break;
+                }
+                TablodaListele(gelenData, page);
+
+            });
+            $(document).on('click', '.mesajSil', function (event) {
+
+                var mesajID = $(this).attr("id");
+                $.ajax({
+                    type: "post",
+                    url: "@Url.Action("DeleteMessage","Kullanicilar")",
+                    data: { "MesajID": parseInt(mesajID) },
+                    success: function () {
+                        GetInbox();
+                        GetSendMessages();
+                    }
+                })
+
+            });
+
+            $(document).on('click', '.mesajiGoruntule', function (event) {
+
+                var mesajID = $(this).attr("id");
+                $.ajax({
+                    type: "post",
+                    url: "@Url.Action("GetMessage","Kullanicilar")",
+                    data: { "MesajID": parseInt(mesajID) },
+                    success: function (item) {
+                        $("#DepremBilgileri").empty();
+                        $("#DepremBilgileri").append
+                            (`<div style = "font-size:30px;">
+                              <label> Mesaj Başlığı:</label><span>`+ item.MesajBasligi + `</span></br>
+                              <label> Mesaj Tarihi:</label><span>`+ ToJavaScriptDate(item.GonderimZamani, 2) + `</span> </br>
+                              <label> Gönderen:</label><span>`+ item.Ad + " " + item.Soyad + " - " + item.Email+ `</span></br>
+                              <label> Mesaj:</label><span>`+ item.Mesaj + `</span></br>
+                              </div>
+                            <a class="btn btn-primary" role="button" data-toggle="collapse" href="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+                                Depremi Görüntüle
+                              </a>
+                            </br>
+                                <div class="collapse" id="collapseExample">
+                                <div class="well">
+                                <div style = "font-size:30px;">
+                              <input type = "hidden" name = "name" id = "`+ item.Id + `" class="tiklananDeprem" value = "" />
+                              <label> Deprem Tarihi:</label><span>`+ ToJavaScriptDate(item.DepremTarihi, 2) + `</span> </br>
+                              <label> Deprem Yeri:</label><span>`+ item.DepremYeri + `</span></br>
+                              <label> Şiddet:</label><span>`+ item.Siddet + `</span></br>
+                              <label> Derinlik:</label><span>`+ item.Derinlik + `</span></br>
+                              <label> Enlem:</label><span>`+ item.Enlem + `</span></br>
+                              <label> Boylam:</label><span>`+ item.Boylam + `</span></br>
+                               <button class="btn markerPan2" id="`+item.Id+`">Depreme Git</button>
+                              </div>
+                                </div>
+                                </div>`);
+                        markerID = item.Id;
+                        $("#basicModal").modal('show');
+                        $("#baslangic").val(ToJavaScriptDate(item.DepremTarihi, 3));
+                        $("#bitis").val(ToJavaScriptDate(item.DepremTarihi, 4));
+                        removeMarkers();//markerlar değişime göre yeniden oluşcagından önceki markerları temizleyen fonsiyonu çağırdım.
+                        document.getElementById("sec").selected = "true";
+                        document.getElementById(item.GonderenID).selected = "true";
+                        RunAjax(map);//değişim sonucu yeni markerlar için runajax fonksiyonumu cagırdım
+                        GetInbox();
+                        GetSendMessages();
+                    }
+                })
+
+            });
+            $(document).on('click', '.GidenMesajiGoruntule', function (event) {
+
+                var mesajID = $(this).attr("id");
+                $.ajax({
+                    type: "post",
+                    url: "@Url.Action("GetMessage","Kullanicilar")",
+                    data: { "MesajID": parseInt(mesajID) },
+                    success: function (item) {
+                        $("#DepremBilgileri").empty();
+                        $("#DepremBilgileri").append
+                            (`<div style = "font-size:30px;">
+                              <label> Mesaj Başlığı:</label><span>`+ item.MesajBasligi + `</span></br>
+                              <label> Mesaj Tarihi:</label><span>`+ ToJavaScriptDate(item.GonderimZamani, 2) + `</span> </br>
+                              <label> Alıcı:</label><span>`+ item.Ad + " " + item.Soyad + " - " + item.Email+ `</span></br>
+                              <label> Mesaj:</label><span>`+ item.Mesaj + `</span></br>
+                              </div>
+                            <a class="btn btn-primary" role="button" data-toggle="collapse" href="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+                                Depremi Görüntüle
+                              </a>
+                            </br>
+                                <div class="collapse" id="collapseExample">
+                                <div class="well">
+                                <div style = "font-size:30px;">
+                              <input type = "hidden" name = "name" id = "`+ item.Id + `" class="tiklananDeprem" value = "" />
+                              <label> Deprem Tarihi:</label><span>`+ ToJavaScriptDate(item.DepremTarihi, 2) + `</span> </br>
+                              <label> Deprem Yeri:</label><span>`+ item.DepremYeri + `</span></br>
+                              <label> Şiddet:</label><span>`+ item.Siddet + `</span></br>
+                              <label> Derinlik:</label><span>`+ item.Derinlik + `</span></br>
+                              <label> Enlem:</label><span>`+ item.Enlem + `</span></br>
+                              <label> Boylam:</label><span>`+ item.Boylam + `</span></br>
+                               <button class="btn markerPan2" id="`+item.Id+`">Depreme Git</button>
+                              </div>
+                                </div>
+                                </div>`);
+                        markerID = item.Id;
+                        $("#basicModal").modal('show');
+                        $("#baslangic").val(ToJavaScriptDate(item.DepremTarihi, 3));
+                        $("#bitis").val(ToJavaScriptDate(item.DepremTarihi, 4));
+                        removeMarkers();//markerlar değişime göre yeniden oluşcagından önceki markerları temizleyen fonsiyonu çağırdım.
+                        document.getElementById("sec").selected = "true";
+                        document.getElementById(item.AliciID).selected = "true";
+                        RunAjax(map);//değişim sonucu yeni markerlar için runajax fonksiyonumu cagırdım
+                    }
+                })
+
+            });
+            $(document).on('click', '.markerPan2', function () {
+                $("#basicModal").modal('hide');
+                var id = $(this).attr("id");
+                markerID = search(id, gmarkers);
+                google.maps.event.trigger(gmarkers[onceki], 'mouseout');
+                map.panTo(gmarkers[markerID].getPosition());
+                google.maps.event.trigger(gmarkers[markerID], 'mouseover');
+                onceki = markerID;
+                //map.setZoom(14);
+            })
+            function ChangeUrl(page, url) {
+                if (typeof (history.pushState) != "undefined") {
+                    var obj = { Page: page, Url: url };
+                    history.pushState(null, obj.Page, obj.Url);
+                } else {
+                    alert("Browser does not support HTML5.");
+                }
+            }
+            function RunAjax(map) {
+                var baslangicTarihi = $('#baslangic').val();//id'si baslangic olan datetime-local tipli input elementinin valuesunu yakaladım
+               // var depremYeri = $('#depremYeri option:selected').val(); //id'si depremYeri olan select(dropdown) elementinin optionlarından selected olanı yani seçili olanı yakaladım.
+                var bitisTarihi = $('#bitis').val();////id'si bitis olan datetime-local tipli input elementinin valuesunu yakaladım
+                var JSONData = {
+                    BaslangicTarihi: $('#baslangic').val(),
+                    BitisTarihi: $('#bitis').val(),
+                    DepremYeri: $('#depremYeri option:selected').val(),
+                    MinSiddet: parseFloat($('#depremSiddetK').val()),
+                    MaxSiddet: parseFloat($('#depremSiddetB').val()),
+                    MinDerinlik: parseFloat($('#depremDerinlikK').val()),
+                    MaxDerinlik: parseFloat($('#depremDerinlikB').val()),
+                    Enlem: parseFloat($('#enlem').val()),
+                    Boylam: parseFloat($('#boylam').val())
+                };
+
+                $.ajax({//depremleri getiren ajax
+                    type: 'post',
+                    url: '@Url.Action("GetEarthQuakes", "Depremler")',//DepremlerController içinde bulunan  GetEarthQuakes actionunu nyolunu belirttim
+                    contentType:'application/json',
+                    dataType: 'json',
+                    data: JSON.stringify({ "depremViewModel": JSONData }), //{ "BaslangicTarihi": baslangicTarihi, "BitisTarihi": bitisTarihi, "MinSiddet": minSiddet},
+                    success: function (data) { //işlem başarılı olmuşsa gelen datayı success olayının içine yönlendirdim
+                        LoadCities(baslangicTarihi, bitisTarihi);//Başlangıc ve bitiş tarihine göre dropdown a deprem yerlerini basan fonksiyonumu çagırdım.
+                        //for (var i = 0; i < data.length; i++) {
+                        //    data[i].DepremTarihi = ToJavaScriptDate(data[i].DepremTarihi, 0);
+                        //}
+
+                        gelenData = data;
+                        ChangeUrl('index', '?page=1');
+                        TablodaListele(gelenData, "?page=1");
+
+                        $.each(data, function (i, item) {//.each(foreach) ile markerları bastım
+                            var marker = new google.maps.Marker({
+                                'position': new google.maps.LatLng(item.Enlem, item.Boylam),
+                                'map': map,
+                                'title': item.DepremYeri,
+                                'icon': getCircle(item.Siddet, item.Derinlik),//iconu google api ile çizdirdiğimden buraya şiddet ve derinliğe göre bi circle çizen bi fonksiyon verdim.
+                                'id':item.Id,
+
+                            });
+                            var infowindow = new google.maps.InfoWindow({//marker'ın infowindowu nu verim her biri için bu veri değişiyor döngüde oldugumuzdan dolayı
+                                content: "<div class='infoDiv' id=" + item.Id + "><h5>" + ToJavaScriptDate(item.DepremTarihi,2) + " " + item.DepremYeri + "</h5>" + "<div><h6>Enlem: " + item.Enlem + "</h6></div><div><h6>Boylam: " + item.Boylam + "</h6></div><div><h6>Şiddet: " + item.Siddet + "</h6></div><div><h6>Derinlik: " + item.Derinlik + " km</h6></div></div>",
+                                disableAutoPan: true//marker üzerine geldigimde haritanın kaymasını engelledim
+                            });
+
+                            google.maps.event.addListener(marker, 'mouseover', function () {
+                                infowindow.open(map, marker);//marker ın mouseover olayını tanımladım
+                            });
+                            google.maps.event.addListener(marker, 'mouseout', function () {
+                                infowindow.close();//marker ın mouseout olayını tanımladım
+                            });
+                            google.maps.event.addListener(marker, 'click', function () {
+                                @{
+                                    if (Session["kullanici"]!=null)
+                                    {
+
+                                    @:$("#DepremBilgileri").empty();
+                                    @:$("#DepremBilgileri").append
+                                    @:(`
+                                    @:<div style = "font-size:30px;">
+                                    @:<input type = "hidden" name = "name" id = "`+item.Id+`" class="tiklananDeprem" value = "" />
+                                    @:<label> Deprem Tarihi:</label><span>`+ToJavaScriptDate(item.DepremTarihi, 2) + `</span> </br>
+                                    @:<label> Deprem Yeri:</label><span>`+item.DepremYeri + `</span></br>
+                                    @:<label> Şiddet:</label><span>`+item.Siddet + `</span></br>
+                                    @:<label> Derinlik:</label><span>`+item.Derinlik + `</span></br>
+                                    @:<label> Enlem:</label><span>`+item.Enlem + `</span></br>
+                                    @:<label> Boylam:</label><span>`+item.Boylam + `</span>
+                                    @:</div>`);
+                                    @:markerID = item.Id;
+                                    @:$("#basicModal").modal('show');
+
+                                    }
+                                }
+
+                            });
+
+                            gmarkers.push(marker);//marker dizimize olusturdugumuz marker ı ekledim.
+                            });
+
+                    },
+                    error: function () {
+
+                    },
+                    complete: function () {
+
+                    }
+                });
+            }
+
+            function TablodaListele(data, page) {
+
+                $.ajax({
+                    type: 'post',
+                    url: "/Depremler/Index" + page,
+                     data: { "data": data },
+                    success: function (result) {
+                        ChangeUrl('index', page);
+                        $('#gDepremTablosu').html(result);
+                    },
+                    complete: function () {
+                        $("#gDepremTablosu li a").removeAttr("href");
+
+                        $("#gDepremTablosu li a").attr("style", "cursor: pointer;");
+
+                    }
+
+                });
+            }
+
+            function removeMarkers() {//markerları temizleyen fonksiyon
+                for (i = 0; i < gmarkers.length; i++) {
+                    gmarkers[i].setMap(null);
+                }
+                gmarkers = [];
+            }
+
+            function getCircle(magnitude,depth) {//içine şiddet ve derinlik alıp circle çizen fonksiyon
+                return {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    fillColor: (depth <= 5 ? 'red' : (depth <= 10 ? 'OrangeRed' : (depth <= 20 ? 'Peru' : (depth <= 40 ? 'Yellow' : (depth <= 80 ? 'green' : 'blue'))))),// derinliğe göre ternary kullanıp renk değiştirdim.
+                    fillOpacity: .7,
+                    scale: Math.pow(2, magnitude)*1.5,
+                    strokeColor: 'white',
+                    strokeWeight: .5
+                    };
+            }
+            function LoadCities(baslangicTarihi, bitisTarihi) {//dropdown'a baslangic ve bitis tarihine göre deprem yerlerini basan fonksiyon
+                $.ajax({
+                type: 'post',
+                    url: '@Url.Action("GetCityNames", "Depremler")',//DepremlerController içinde bulunan  GetCityNames actionunun yolunu belirttim
+                    data: { "baslangicTarihi": baslangicTarihi, "bitisTarihi": bitisTarihi },
+                dataType: 'json',
+                    success: function (sehirler) {
+
+                        $("#depremYeri").empty();//her değişimde fonksiyon yeniden çağrılcagından önceki seçenekleri temizledim
+                        $("#depremYeri").append("<option value='seciniz' id='sec'>Seçiniz</option>");//ilk secenek seçiniz olarak ekledim
+                        for (var i = 0; i < sehirler.length; i++) {//gelen sehirleri for ile dönüp depremYeri id li select içine option olarak bastım
+                        $("#depremYeri").append("<option value='" + sehirler[i].DepremYeri + "'>" + sehirler[i].DepremYeri + "</option>");
+
+                        }
+                        $("#depremYeri option").each(function () {//optionların her değişimde selected attribute u kalmasın diye gelene göre diger optionların selected attribute unu sildim.
+                            if ($(this).val() == secilen) {
+                                $(this).attr("selected", "selected");
+                            }
+                            else {
+                                $(this).removeAttr("selected");
+                            }
+                        });
+                }
+                });
+            }
+            function DTSifirla() {
+                 $("#baslangic").val("@DateTime.Now.AddDays(-1).ToString("s")"); //id'si baslangic olan datetime-local tipli input elementimin seçili değerini bugunun tam olarak 1 gün eksigi olarak verdim.
+                $("#bitis").val("@DateTime.Now.ToString("s")"); //id'si bitis olan datetime-local tipli input elementimin seçili değerini şimdi olarak verdim.
+                removeMarkers();//markerlar değişime göre yeniden oluşcagından önceki markerları temizleyen fonsiyonu çağırdım.
+                document.getElementById("sec").selected = "true";
+                RunAjax(map);//değişim sonucu yeni markerlar için runajax fonksiyonumu cagırdım
+            }
+            function LoadDateTimePickers() { //datetime-local elementlerinin minimum ,maximum ve seçili olarak gelmesini istediğim değerleri verdiğim fonksiyon.
+                $("#baslangic").val("@DateTime.Now.AddDays(-1).ToString("s")"); //id'si baslangic olan datetime-local tipli input elementimin seçili değerini bugunun tam olarak 1 gün eksigi olarak verdim.
+                $("#bitis").val("@DateTime.Now.ToString("s")"); //id'si bitis olan datetime-local tipli input elementimin seçili değerini şimdi olarak verdim.
+                $("#tarihLabel").text("@DateTime.Now.AddDays(-1).ToString() ile @DateTime.Now.ToString() arasındaki depremler listeleniyor.")
+                $.ajax({
+                    type: 'get',
+                    url: '@Url.Action("GetFirstAndLastRecord", "Depremler")',//DepremlerController içinde bulunan  GetFirstAndLastRecord actionunun yolunu belirttim
+                    dataType: 'json',
+                    success: function (data) {//gelen data ilk ve son depremin tarihi olacak ona göre min ve max değerleri değiştirdim.
+
+                        $("#baslangic").attr("min", ToJavaScriptDate(data[0].DepremTarihi,0));
+                        $("#bitis").attr("min", ToJavaScriptDate(data[0].DepremTarihi,0));
+                        $("#baslangic").attr("max", ToJavaScriptDate(data[1].DepremTarihi,0));
+                        $("#bitis").attr("max", ToJavaScriptDate(data[1].DepremTarihi,0));
+                    }
+                    })
+            }
+            function ToJavaScriptDate(value, durum) {//datetime local formatına burada dönüşüm yaptım.
+
+                var pattern = /Date\(([^)]+)\)/;
+                var results = pattern.exec(value);
+                var dt = new Date(parseFloat(results[1]));
+                if (durum==-1) {
+                    return dt.getFullYear() + "-" + (dt.getMonth() + 1) + "-" + (dt.getDate() < 10 ? "0" + dt.getDate() : dt.getDate()) + " " + (dt.getHours() < 10 ? "0" + dt.getHours() : dt.getHours()) + ":" + (dt.getMinutes() < 10 ? "0" + dt.getMinutes() : dt.getMinutes()) + ":" + (dt.getSeconds() < 10 ? "0" + dt.getSeconds() : dt.getSeconds());
+                }
+                else if (durum==0) {
+
+                    return dt.getFullYear() + "-" + (dt.getMonth() + 1) + "-" + (dt.getDate() < 10 ? "0" + dt.getDate() : dt.getDate()) + "T" + (dt.getHours() < 10 ? "0" + dt.getHours() : dt.getHours()) + ":" + (dt.getMinutes() < 10 ? "0" + dt.getMinutes() : dt.getMinutes()) ;
+                }
+                else if (durum == 1) {
+                    return dt.getFullYear() + "-" + (dt.getMonth() + 1) + "-" + (dt.getDate() < 10 ? "0" + dt.getDate() : dt.getDate()) + "T00:00:00" ;
+                }
+                else if (durum == 2) {
+
+                    return (dt.getDate() < 10 ? "0" + dt.getDate() : dt.getDate()) + "." + (dt.getMonth() + 1 < 10 ? "0" + (dt.getMonth() + 1) : dt.getMonth()+1) + "." + dt.getFullYear() + " " + (dt.getHours() < 10 ? "0" + dt.getHours() : dt.getHours()) + ":" + (dt.getMinutes() < 10 ? "0" + dt.getMinutes() : dt.getMinutes()) + ":" + (dt.getSeconds() < 10 ? "0" + dt.getSeconds() : dt.getSeconds())
+                }
+                else if (durum == 3) {
+
+                    return dt.getFullYear() + "-" + (dt.getMonth() + 1 < 10 ? "0" + (dt.getMonth() +1): dt.getMonth()+1) + "-" + (dt.getDate() < 10 ? "0" + dt.getDate() : dt.getDate()) + "T" + (dt.getHours() < 10 ? "0" + dt.getHours() : dt.getHours()) + ":" + (dt.getMinutes() < 10 ? "0" + dt.getMinutes() : dt.getMinutes());
+                }
+                else if (durum == 4) {
+
+                    return dt.getFullYear() + "-" + (dt.getMonth() + 1 < 10 ? "0" + (dt.getMonth() + 1) : dt.getMonth()+1) + "-" + (dt.getDate() < 10 ? "0" + dt.getDate() : dt.getDate()) + "T" + (dt.getHours() < 10 ? "0" + dt.getHours() : dt.getHours()) + ":" + (dt.getMinutes() <= 8 ? "0" + (dt.getMinutes() + 1) : (dt.getMinutes() + 1));
+                }
+            }
+
+
+        </script>
+    </section>
+}
+
+

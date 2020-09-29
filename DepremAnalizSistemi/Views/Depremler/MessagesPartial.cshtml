@@ -1,0 +1,36 @@
+﻿@model IEnumerable<DepremAnalizSistemi.Models.Mesajlar>
+
+@if (Model != null)
+{
+<div class="list-group">
+    @if (Model.Count() == 0)
+    {
+        <h3 style="color:white;text-align:center">Mesaj kutusu boş</h3>
+    }
+    else
+    {
+        <h1 style="color:white;text-align:center">MESAJLAR</h1>
+        foreach (var item in Model)
+        {
+        <div class="list-group-item list-group-item-action flex-column align-items-start mesaj">
+            <a class="mesajiGoruntule" id="@item.ID" style="cursor:pointer;@(item.OkunduMu?"text-decoration:none;color:white":"")">
+                <div class="d-flex w-100 justify-content-between">
+                    <h4 class="mb-1 mesajbaslik">@item.MesajBasligi</h4>
+                    <small>
+                        Kimden: @item.Gonderen.Ad @item.Gonderen.Soyad
+
+                    </small>
+                </div>
+                <p class="mb-1 mesajicerigi">@item.Mesaj</p>
+            </a>
+            <p> @item.GonderimZamani <small class="label label-danger mesajSil" style="float:right;cursor:pointer" id="@item.ID">Sil</small><small class="label label-success"style="float:right;margin-right:3px">@(item.OkunduMu ? "Okundu" : "")</small> </p>
+        </div>
+            
+
+        }
+    }
+
+
+</div>
+}
+

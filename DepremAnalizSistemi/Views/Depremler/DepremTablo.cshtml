@@ -1,0 +1,33 @@
+﻿@using PagedList.Mvc
+@model PagedList.IPagedList<DepremAnalizSistemi.Models.Depremler>
+
+@if (Model != null)
+{
+    <table class="table table-bordered">
+        <tr>
+            <th>Tarihi</th>
+            <th>Yeri</th>
+            <th>Enlem</th>
+            <th>Boylam</th>
+            <th>Şiddet</th>
+            <th>Derinlik</th>
+        </tr>
+
+        @foreach (var item in Model)
+        {
+            <tr>
+                <th><a style="cursor:pointer" id="@item.Id" class="markerPan">@item.DepremTarihi</a></th>
+                <th>@item.DepremYeri</th>
+                <th>@item.Enlem</th>
+                <th>@item.Boylam</th>
+                <th>@item.Siddet.Value.ToString("0.0").Replace(',', '.')</th>
+                <th>@item.Derinlik.Value.ToString("0.0km").Replace(',', '.')</th>
+            </tr>
+        }
+    </table>
+    <div class="sayfaNumaralari">
+        @Html.PagedListPager(Model, page => Url.Action("Index", "Depremler", new { page = page }))
+
+    </div>
+
+}
